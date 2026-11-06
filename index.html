@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paul Logus</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    background: #000;
+    overflow: hidden;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  .stage {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    min-height: 0;
+  }
+
+  .wall {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(11, 1fr);
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+
+  .wall img {
+    position: relative;
+    z-index: 1;
+    transition: transform 0.2s ease, z-index 0s;
+    cursor: pointer;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .wall img:hover {
+    transform: scale(2);
+    z-index: 100;
+  }
+
+  /* ── directional expand: transform-origin keeps the scaled image inward ── */
+
+  /* top row → expand downward */
+  .wall img:nth-child(-n+5)  { transform-origin: top center; }
+  /* bottom row → expand upward */
+  .wall img:nth-child(n+51)  { transform-origin: bottom center; }
+
+  /* left wall outer edge (col 1) → expand rightward */
+  #left-wall  img:nth-child(5n+1) { transform-origin: center left; }
+  /* right wall outer edge (col 5) → expand leftward */
+  #right-wall img:nth-child(5n)   { transform-origin: center right; }
+
+  /* corners — more specific, override edge rules above */
+  #left-wall  img:nth-child(1)  { transform-origin: top left; }     /* top-left */
+  #left-wall  img:nth-child(51) { transform-origin: bottom left; }  /* bottom-left */
+  #right-wall img:nth-child(5)  { transform-origin: top right; }    /* top-right */
+  #right-wall img:nth-child(55) { transform-origin: bottom right; } /* bottom-right */
+
+  .center {
+    flex: 1;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    position: relative;
+  }
+
+  nav {
+    padding: 14px 0 10px;
+    text-align: center;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 15px;
+    letter-spacing: 0.06em;
+  }
+
+  nav a {
+    color: #bbb;
+    text-decoration: none;
+    margin: 0 14px;
+  }
+
+  nav a:hover { color: #aaa; }
+
+  .name-block {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .credit-note {
+    position: absolute;
+    top: 30%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    z-index: 1;
+  }
+  .plx-note {
+    position: absolute;
+    top: calc(30% + 4em);
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-family: Georgia, serif;
+    font-weight: normal;
+    color: #999;
+    font-size: clamp(0.55rem, 0.88vw, 0.79rem);
+    letter-spacing: 0.05em;
+    text-align: center;
+    z-index: 1;
+  }
+  .plx-note a { color: #bbb; text-decoration: none; }
+  .plx-note a:hover { color: #fff; }
+  .cn-line {
+    font-family: Georgia, serif;
+    font-weight: normal;
+    color: #999;
+    font-size: clamp(0.55rem, 0.88vw, 0.79rem);
+    letter-spacing: 0.05em;
+  }
+
+  .name-block h1 {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: normal;
+    color: #fff;
+    font-size: clamp(1.8rem, 4.5vw, 4.5rem);
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+
+  .name-block p {
+    font-family: Georgia, serif;
+    font-weight: normal;
+    color: #aaa;
+    font-size: clamp(1rem, 1.6vw, 1.75rem);
+    letter-spacing: 0.07em;
+    margin-top: 10px;
+  }
+  #credit-box {
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    background: rgba(0, 0, 0, 0.88);
+    border: 1px solid #555;
+    padding: 10px 16px 12px;
+    pointer-events: none;
+    z-index: 200;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+  }
+  #credit-box.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+  .credit-title {
+    font-family: Georgia, serif;
+    color: #fff;
+    font-size: 0.9rem;
+    letter-spacing: 0.03em;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 6px;
+    width: 100%;
+  }
+  @keyframes labelPulse {
+    0%, 100% { color: #aaa; }
+    50% { color: #fff; }
+  }
+  .credit-label {
+    font-family: Georgia, serif;
+    color: #aaa;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    animation: labelPulse 8s ease-in-out infinite;
+  }
+  .credit-name {
+    font-family: Georgia, serif;
+    color: #fff;
+    font-size: 1rem;
+    letter-spacing: 0.04em;
+  }
+  .credit-body {
+    font-family: Georgia, serif;
+    color: #bbb;
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+    margin-top: 8px;
+    border-top: 1px solid #333;
+    padding-top: 6px;
+    width: 100%;
+    white-space: pre-line;
+    line-height: 1.6;
+  }
+  /* ── contact form overlay ──────────────────────────────────────────── */
+  #contact-overlay {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    position: absolute;
+    top: 68%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: clamp(200px, 22vw, 320px);
+    z-index: 50;
+  }
+  #contact-overlay.open { display: flex; }
+
+  #contact-overlay form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+
+  #contact-overlay input,
+  #contact-overlay textarea {
+    background: #111;
+    border: 1px solid #444;
+    color: #ddd;
+    font-family: Georgia, serif;
+    font-size: 0.9rem;
+    padding: 9px 12px;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+  }
+
+  #contact-overlay input:focus,
+  #contact-overlay textarea:focus { border-color: #888; }
+
+  #contact-overlay textarea { resize: vertical; min-height: 110px; }
+
+  #contact-overlay input::placeholder,
+  #contact-overlay textarea::placeholder { color: #555; }
+
+  #contact-overlay button {
+    background: transparent;
+    border: 1px solid #666;
+    color: #ccc;
+    font-family: Georgia, serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    padding: 7px 0;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  #contact-overlay button:hover { border-color: #fff; color: #fff; }
+
+  #contact-status {
+    font-family: Georgia, serif;
+    font-size: 0.78rem;
+    color: #aaa;
+    margin-top: 8px;
+    min-height: 1.2em;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="wall" id="left-wall"></div>
+
+  <div class="center">
+    <nav>
+      <a href="#">Home</a>
+      <a href="#">Contact</a>
+    </nav>
+    <div class="credit-note">
+      <span class="cn-line">All titles were mixed by Paul Logus</span>
+      <span class="cn-line">except where noted</span>
+    </div>
+    <p class="plx-note">Here is a link to <a href="artists.html">PLX Mastering</a> where I live now.</p>
+    <div class="name-block">
+      <h1>Paul Logus</h1>
+      <p>New York City</p>
+    </div>
+
+    <div id="contact-overlay">
+      <form id="contact-form" action="https://formspree.io/f/myeebazw" method="POST">
+        <input type="text"  name="name"    placeholder="Name"    required>
+        <input type="email" name="email"   placeholder="Email"   required>
+        <textarea           name="message" placeholder="Message" required></textarea>
+        <button type="submit">Send</button>
+      </form>
+      <div id="contact-status"></div>
+    </div>
+  </div>
+
+  <div class="wall" id="right-wall"></div>
+</div>
+
+<div id="credit-box">
+  <span class="credit-title" id="cb-title"></span>
+  <span class="credit-label" id="cb-label"></span>
+  <span class="credit-name" id="cb-name"></span>
+  <span class="credit-body" id="cb-body"></span>
+</div>
+
+<script>
+const left = [
+  "007GEsoundtrack.jpg","112_OnlyYouRemixes.jpg","112_album.png","98°_-_98°_Front.jpg",
+  "Arch_Nemesis_(Benzino_album).jpeg","AssortedPhlavors.jpg","B.I.G._-_Born_Again.png",
+  "BBF_-_Saga_Continues.jpg","BabyRay-MonkeyPuzzle.jpg","BadBoy-10thAnniversaryHits.jpg",
+  "BadBoy-GreatestHitsVol1.jpg","BadBoys2.jpg","Beyonce-CrazyInLove.jpg",
+  "Blondie_-_The_Curse_Of_Blondie.jpg","Blue_(Simply_Red_album).jpg","Boyz_n_the_Hood_OST.jpg",
+  "Brianmcknight-anytimealbum.jpg","BulworthTheSoundtrackAlbumCover.jpg","CCP_IMO_album.jpg",
+  "CarlThomasEmotional.jpg","Carlletstalk.jpg","CeCePeniston_MovinOn.jpg","CharlieSexton.jpg",
+  "Cher-HeartOfStone.jpg","CheriDennisInAndOutOfLoveOfficial.JPG","Child_of_the_Ghetto.jpg",
+  "CowboysFromHell.jpg","CurtSmith-CallingOut.jpg","CurtSmith-Mayfield.jpg",
+  "CurtSmithSoulOnBoard.jpg","DMX_-_The_Great_Depression.albumcover.jpg",
+  "DangerDanger_DownAndDirty-Live.jpg","Deep_Blue_Sea_OST.jpg","Diddy-Pdiddy.jpg",
+  "Donell_Jones_-_My_Heart.jpg","Double_Up_(Mase_album)_coverart.jpg","DrDoolittle-Sountrack.jpg",
+  "Dream_ItWasAllADream.jpg","Dream_Reality.jpg","DuranDuran-InstantKarma-Darfur.jpg",
+  "Faith_evans-faithfully.jpg","For_Life.jpg","Forever_My_Lady.jpg","Foreverdiddy.jpg",
+  "FreddyJackon.jpg","Godzilla_OST.jpg","HarlemWorld.jpg","Hegotgame.jpg",
+  "Higher_Learning_OST.jpg","Hoodlum_OST.jpg","HowHigh-MethodMainandRedmanPT2.jpg",
+  "HowHigh-Soundtrack.jpg","I'll_Give_All_My_Love_to_You_(album_cover).jpg","I_Gotta_Make_It.jpg",
+  "WeAreTheFuture.jpg"
+];
+
+const right = [
+  "In_the_Zone.png","Intro.jpg","Jasmine_Guy_self-titled_album.jpg","JayZ-LaLaLa.jpg",
+  "JenniferLopez-LoveDontCostATHing.jpg","JLo-Play.jpg",
+  "Joan_Jett_and_the_Blackhearts_-_The_Hit_List_Coverart.jpg","JodyWatley.jpg",
+  "Jody_Watley_-_Flower.jpg","Jonell_RoundandRound.jpg","KL1996.jpg",
+  "LadySmithBlackMabazo-TwoWorldsOneHeart.jpg","LifeStory.jpg","Limp_Bizkit_New_Old_Songs.jpg",
+  "Loon-DownForMe.jpg","Love_&_Life_(Mary_J._Blige_album).jpg","Mario-Go.jpg",
+  "MarioWynans-IDontWannaKnow.jpg","Mayfiled.jpg","MelbaMoore.jpg","MichaelCooper-GetCloser.jpg",
+  "MoMoneySoundtack.jpg","Nelly_P._Diddy_and_Murphy_Lee_-_Shake_Ya_Tailfeather_CD_cover.jpg",
+  "No_Way_Out_-_Puff_Daddy.jpg","Nobody_Knows_Tony_Rich.jpg","Nomoredrama.jpg",
+  "Not_a_Perfect_Man.jpg","NotoriousB.I.G.LifeAfterDeath.jpg","One_Love_New_Edition.png",
+  "Order_In_The_Court_album_cover.jpg","PD-PE2000.jpg","PaulShaffer_Coast-to-coast.jpg",
+  "Private_Times_And_The_Whole_9.jpg","R-3342321-1331557542.jpg","Ra_from_one.jpg","Room112.jpg",
+  "Screw_It!_(Danger_Danger_album_-_cover_art).jpg","ShirleyMurdock_album.png","Shyne_(album).jpg",
+  "SimplyRed_TheAirThatIBreathe.jpg","SWV-You'reTheOne-Remix.jpg","SWV_-_Release_Some_Tension.jpg",
+  "Tamia-MoreAlbum.jpg","Tasha_Holiday_-_Just_the_Way_You_Like_It_album_cover.jpg",
+  "The_Fighting_Temptations_(Music_From_The_Motion_Picture).jpg","The_Lover_in_Me_cover.jpg",
+  "The_Other_Woman.jpg","TheChurchills-Youarehere.jpg","Total-Secondalbum.jpg",
+  "Total-SittingHome.jpg","Totaldebut.jpg","Training_Day_OST.jpg",
+  "Wings_of_Desire_-_Jennifer_Rush.jpg","Zapp_-_New_Zapp_IV_U_album_cover.jpg","newEdition-OnLove.jpg"
+];
+
+function sizeWalls() {
+  const stageH = document.querySelector('.stage').clientHeight;
+  const imgPx  = stageH / 11;
+  const wallW  = imgPx * 5;
+  document.querySelectorAll('.wall').forEach(w => {
+    w.style.width = wallW + 'px';
+  });
+}
+
+function populate(id, imgs) {
+  const wall = document.getElementById(id);
+  imgs.forEach(src => {
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = '';
+    img.loading = 'lazy';
+    wall.appendChild(img);
+  });
+}
+
+populate('left-wall',  left);
+populate('right-wall', right);
+sizeWalls();
+
+// ── contact form ─────────────────────────────────────────────────────────
+const contactOverlay = document.getElementById('contact-overlay');
+const contactForm    = document.getElementById('contact-form');
+const contactStatus  = document.getElementById('contact-status');
+
+document.querySelectorAll('nav a').forEach(a => {
+  if (a.textContent.trim() === 'Contact') {
+    a.href = '#';
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      contactOverlay.classList.toggle('open');
+    });
+  }
+});
+
+contactForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  contactStatus.textContent = 'Sending…';
+  try {
+    const res = await fetch(contactForm.action, {
+      method: 'POST',
+      body: new FormData(contactForm),
+      headers: { 'Accept': 'application/json' }
+    });
+    if (res.ok) {
+      contactStatus.textContent = 'Message sent. Thank you.';
+      contactForm.reset();
+    } else {
+      contactStatus.textContent = 'Something went wrong. Please try again.';
+    }
+  } catch {
+    contactStatus.textContent = 'Could not send. Check your connection.';
+  }
+});
+
+// ── close contact on Escape ──────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') contactOverlay.classList.remove('open');
+});
+
+// ── credit popout for Darfur cover (index 39, row 8 col 5 of left wall) ─
+const creditBox  = document.getElementById('credit-box');
+const cbTitle    = document.getElementById('cb-title');
+const cbLabel    = document.getElementById('cb-label');
+const cbName     = document.getElementById('cb-name');
+
+const creditData = [
+  { wall: '#left-wall',  index: 39, title: 'Duran Duran – Instant Karma',
+    label: 'Produced, Engineered and Mixed by', name: 'Paul Logus' },
+  { wall: '#left-wall',  index: 0,  title: 'GoldenEye 007',
+    label: 'Tina Turner – GoldenEye Theme / Remix', name: 'Produced by Kevin Dean · Mixed by Paul Logus' },
+  { wall: '#left-wall',  index: 26, title: 'Pantera',
+    label: 'Cowboys From Hell · Cemetery Gates · Psycho Holiday', name: 'Mixed by Paul Logus',
+    lines: [
+      'Produced and originally mixed by Terry Date',
+      'New mixes commissioned and produced by Mark Ross – ATCO'
+    ] },
+  { wall: '#left-wall',  index: 47, title: 'He Got Game',
+    label: 'Mixed in 5.1 for Theater / Stereo for Soundtrack', name: 'by Paul Logus' },
+  { wall: '#left-wall',  index: 45, title: 'Come With Me – Godzilla Theme', xOffset: 48,
+    label: 'Feat. Jimmy Page, Tom Morello, Puff Daddy', name: 'Engineered and Mixed by Paul Logus',
+    lines: [
+      '(No samples used)',
+      'Basics recorded at Record Plant LA with Mario Wynans on Drums, Tom Morello on guitar and bass',
+      'Jimmy Page (in England) recorded via EDnet at Capitol Records.',
+      'Initial string keys by J Dub',
+      'Arr. for 100 pc Orchestra · Written and Conducted by Jeremy Lubbock',
+      'Recorded at Sony Sound Stage LA',
+      'Mixed at Daddys House by Paul Logus.'
+    ] },
+  { wall: '#right-wall', index: 34, title: 'RA – From One', side: 'left',
+    label: 'Produced by Paul Logus and Sahaj', name: 'Mixed by Paul Logus' },
+];
+
+creditData.forEach(({ wall, index, title, label, name, side = 'right', lines = [], xOffset = 16 }) => {
+  const img = document.querySelectorAll(wall + ' img')[index];
+  if (!img) { console.warn('Credit img not found', wall, index); return; }
+  img.addEventListener('mouseover', () => {
+    cbTitle.textContent = title;
+    cbLabel.textContent = label;
+    cbName.textContent  = name;
+    const cbBody = document.getElementById('cb-body');
+    if (lines.length) { cbBody.textContent = lines.join('\n'); cbBody.style.display = ''; }
+    else { cbBody.textContent = ''; cbBody.style.display = 'none'; }
+    const r = img.getBoundingClientRect();
+    creditBox.style.top  = Math.round(r.top + (r.height / 2) - 30) + 'px';
+    if (side === 'left') {
+      creditBox.style.left  = '';
+      creditBox.style.right = Math.round(window.innerWidth - r.left + 16) + 'px';
+    } else {
+      creditBox.style.right = '';
+      creditBox.style.left  = Math.round(r.right + xOffset) + 'px';
+    }
+    creditBox.classList.add('visible');
+    requestAnimationFrame(() => {
+      const boxH = creditBox.offsetHeight;
+      const maxTop = window.innerHeight - boxH - 12;
+      if (parseFloat(creditBox.style.top) > maxTop) {
+        creditBox.style.top = Math.max(12, maxTop) + 'px';
+      }
+    });
+  });
+  img.addEventListener('mouseout', () => { creditBox.classList.remove('visible'); });
+});
+window.addEventListener('resize', sizeWalls);
+</script>
+</body>
+</html>
