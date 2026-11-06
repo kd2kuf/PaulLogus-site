@@ -399,6 +399,10 @@ document.querySelectorAll('nav a').forEach(a => {
     a.addEventListener('click', e => {
       e.preventDefault();
       contactOverlay.classList.toggle('open');
+      if (!contactOverlay.classList.contains('open')) {
+        contactForm.style.display = '';
+        contactStatus.textContent = '';
+      }
     });
   }
 });
@@ -413,8 +417,10 @@ contactForm.addEventListener('submit', async e => {
       headers: { 'Accept': 'application/json' }
     });
     if (res.ok) {
+      contactForm.style.display = 'none';
       contactStatus.textContent = 'Message sent. Thank you.';
-      contactForm.reset();
+      contactStatus.style.fontSize = '0.9rem';
+      contactStatus.style.marginTop = '0';
     } else {
       contactStatus.textContent = 'Something went wrong. Please try again.';
     }
@@ -425,7 +431,19 @@ contactForm.addEventListener('submit', async e => {
 
 // ── close contact on Escape ──────────────────────────────────────────────
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') contactOverlay.classList.remove('open');
+  if (e.key === 'Escape') {
+    contactOverlay.classList.remove('open');
+    contactForm.style.display = '';
+    contactStatus.textContent = '';
+  }
+});
+
+document.addEventListener('click', e => {
+  if (contactOverlay.classList.contains('open') && !contactOverlay.contains(e.target) && !e.target.closest('nav')) {
+    contactOverlay.classList.remove('open');
+    contactForm.style.display = '';
+    contactStatus.textContent = '';
+  }
 });
 
 // ── credit popout for Darfur cover (index 39, row 8 col 5 of left wall) ─
