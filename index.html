@@ -664,10 +664,15 @@ document.addEventListener('click', e => {
     i.style.transformOrigin = '';
   });
   if (!already) {
-    // set transform-origin so edge columns expand inward
-    const col = [...img.parentElement.children].indexOf(img) % 6;
+    // set transform-origin so edges expand inward and top row expands down
+    const siblings = [...img.parentElement.children];
+    const idx = siblings.indexOf(img);
+    const col = idx % 6;
+    const row = Math.floor(idx / 6);
+    const isTopGrid = img.closest('#mobile-top') !== null;
     const originX = col === 0 ? 'left' : col === 5 ? 'right' : 'center';
-    img.style.transformOrigin = originX + ' center';
+    const originY = (isTopGrid && row === 0) ? 'top' : 'center';
+    img.style.transformOrigin = originX + ' ' + originY;
     img.classList.add('tapped');
   }
 });
