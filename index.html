@@ -218,8 +218,8 @@
     display: none;
     flex-direction: column;
     align-items: center;
-    position: absolute;
-    top: 68%;
+    position: fixed;
+    top: 68vh;
     left: 50%;
     transform: translateX(-50%);
     width: clamp(200px, 22vw, 320px);
@@ -317,6 +317,53 @@
       margin-bottom: 4px;
     }
     #mobile-name-block a:hover { color: #fff; }
+    #mobile-contact-section {
+      background: #000;
+      padding: 40px 24px 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    #mobile-contact-section form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      max-width: 360px;
+    }
+    #mobile-contact-section input,
+    #mobile-contact-section textarea {
+      background: #111;
+      border: 1px solid #444;
+      color: #ddd;
+      font-family: Georgia, serif;
+      font-size: 0.9rem;
+      padding: 9px 12px;
+      outline: none;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    #mobile-contact-section textarea { resize: vertical; min-height: 110px; }
+    #mobile-contact-section input::placeholder,
+    #mobile-contact-section textarea::placeholder { color: #555; }
+    #mobile-contact-section button {
+      background: transparent;
+      border: 1px solid #666;
+      color: #ccc;
+      font-family: Georgia, serif;
+      font-size: 0.9rem;
+      letter-spacing: 0.08em;
+      padding: 10px 0;
+      cursor: pointer;
+    }
+    #mobile-contact-status {
+      font-family: Georgia, serif;
+      font-size: 0.8rem;
+      color: #aaa;
+      text-align: center;
+      min-height: 1.2em;
+    }
     #mobile-name-block h1 {
       font-family: Georgia, 'Times New Roman', serif;
       font-weight: normal;
@@ -332,12 +379,8 @@
       letter-spacing: 0.07em;
     }
     #contact-overlay {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      top: 30vh;
       width: clamp(200px, 80vw, 320px);
-      z-index: 50;
     }
   }
   @media (min-width: 769px) {
@@ -365,15 +408,6 @@
       <p>New York City</p>
     </div>
 
-    <div id="contact-overlay">
-      <form id="contact-form" action="https://formspree.io/f/myeebazw" method="POST">
-        <input type="text"  name="name"    placeholder="Name"    required>
-        <input type="email" name="email"   placeholder="Email"   required>
-        <textarea           name="message" placeholder="Message" required></textarea>
-        <button type="submit">Send</button>
-      </form>
-      <div id="contact-status"></div>
-    </div>
   </div>
 
   <div class="wall" id="right-wall"></div>
@@ -382,11 +416,30 @@
 <div id="mobile-view">
   <div class="mobile-grid" id="mobile-top"></div>
   <div id="mobile-name-block">
-    <a href="#" id="mobile-contact-link">Contact</a>
+    <a href="#mobile-contact-section">Contact</a>
     <h1>Paul Logus</h1>
     <p>New York City</p>
   </div>
   <div class="mobile-grid" id="mobile-bottom"></div>
+  <div id="mobile-contact-section">
+    <form id="mobile-contact-form" action="https://formspree.io/f/myeebazw" method="POST">
+      <input type="text"  name="name"    placeholder="Name"    required>
+      <input type="email" name="email"   placeholder="Email"   required>
+      <textarea           name="message" placeholder="Message" required></textarea>
+      <button type="submit">Send</button>
+    </form>
+    <div id="mobile-contact-status"></div>
+  </div>
+</div>
+
+<div id="contact-overlay">
+  <form id="contact-form" action="https://formspree.io/f/myeebazw" method="POST">
+    <input type="text"  name="name"    placeholder="Name"    required>
+    <input type="email" name="email"   placeholder="Email"   required>
+    <textarea           name="message" placeholder="Message" required></textarea>
+    <button type="submit">Send</button>
+  </form>
+  <div id="contact-status"></div>
 </div>
 
 <div id="credit-box">
@@ -588,9 +641,26 @@ creditData.forEach(({ wall, index, title, label, name, side = 'right', lines = [
 });
 window.addEventListener('resize', sizeWalls);
 
+// ── mobile contact form ─────────────────────────────────────────────────
+const mobileForm   = document.getElementById('mobile-contact-form');
+const mobileStatus = document.getElementById('mobile-contact-status');
+if (mobileForm) {
+  mobileForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    mobileStatus.textContent = 'Sending…';
+    try {
+      const res = await fetch(mobileForm.action, { method: 'POST', body: new FormData(mobileForm), headers: { 'Accept': 'application/json' } });
+      if (res.ok) { mobileStatus.textContent = 'Message sent. Thank you.'; mobileForm.reset(); }
+      else { mobileStatus.textContent = 'Something went wrong. Please try again.'; }
+    } catch { mobileStatus.textContent = 'Could not send. Check your connection.'; }
+  });
+}
+
 // ── mobile wall ──────────────────────────────────────────────────────────
 (function buildMobile() {
-  const all = [...left, ...right];
+  const allRaw = [...left, ...right];
+  // drop index 1 (row1 pic2) and index 28 (row5 pic4) for clean 6-across rows
+  const all = allRaw.filter((_, i) => i !== 1 && i !== 28);
   const topImgs = all.slice(0, 24);
   const botImgs = all.slice(24);
   function addImgs(containerId, srcs) {
@@ -604,14 +674,7 @@ window.addEventListener('resize', sizeWalls);
   addImgs('mobile-top', topImgs);
   addImgs('mobile-bottom', botImgs);
 
-  document.getElementById('mobile-contact-link').addEventListener('click', e => {
-    e.preventDefault();
-    contactOverlay.classList.toggle('open');
-    if (!contactOverlay.classList.contains('open')) {
-      contactForm.style.display = '';
-      contactStatus.textContent = '';
-    }
-  });
+
 })();
 </script>
 </body>
