@@ -283,11 +283,13 @@
     .stage { display: none; }
     #credit-box { display: none; }
 
+    html, body { overflow: visible; height: auto; }
     #mobile-view {
       display: block;
       background: #000;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
+      min-height: 100vh;
     }
     .mobile-grid {
       display: grid;
