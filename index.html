@@ -298,6 +298,13 @@
       aspect-ratio: 1;
       object-fit: cover;
       display: block;
+      position: relative;
+      z-index: 1;
+      transition: transform 0.2s ease;
+    }
+    .mobile-grid img.tapped {
+      transform: scale(2);
+      z-index: 100;
     }
     #mobile-name-block {
       background: #000;
@@ -640,6 +647,19 @@ creditData.forEach(({ wall, index, title, label, name, side = 'right', lines = [
   img.addEventListener('mouseout', () => { creditBox.classList.remove('visible'); });
 });
 window.addEventListener('resize', sizeWalls);
+
+// ── mobile tap expand ────────────────────────────────────────────────────
+document.addEventListener('click', e => {
+  const img = e.target.closest('.mobile-grid img');
+  if (!img) {
+    // tap outside — collapse any expanded
+    document.querySelectorAll('.mobile-grid img.tapped').forEach(i => i.classList.remove('tapped'));
+    return;
+  }
+  const already = img.classList.contains('tapped');
+  document.querySelectorAll('.mobile-grid img.tapped').forEach(i => i.classList.remove('tapped'));
+  if (!already) img.classList.add('tapped');
+});
 
 // ── mobile contact form ─────────────────────────────────────────────────
 const mobileForm   = document.getElementById('mobile-contact-form');
