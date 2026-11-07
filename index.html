@@ -277,6 +277,72 @@
     min-height: 1.2em;
     text-align: center;
   }
+
+  /* ── mobile layout ─────────────────────────────────────────────────────── */
+  @media (max-width: 768px) {
+    .stage { display: none; }
+    #credit-box { display: none; }
+
+    #mobile-view {
+      display: block;
+      background: #000;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .mobile-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+    }
+    .mobile-grid img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      display: block;
+    }
+    #mobile-name-block {
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      aspect-ratio: 3 / 1;
+      gap: 4px;
+    }
+    #mobile-name-block a {
+      font-family: Georgia, serif;
+      color: #bbb;
+      font-size: 3.2vw;
+      letter-spacing: 0.08em;
+      text-decoration: none;
+      margin-bottom: 4px;
+    }
+    #mobile-name-block a:hover { color: #fff; }
+    #mobile-name-block h1 {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-weight: normal;
+      color: #fff;
+      font-size: 7vw;
+      letter-spacing: 0.03em;
+    }
+    #mobile-name-block p {
+      font-family: Georgia, serif;
+      font-weight: normal;
+      color: #aaa;
+      font-size: 3.5vw;
+      letter-spacing: 0.07em;
+    }
+    #contact-overlay {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: clamp(200px, 80vw, 320px);
+      z-index: 50;
+    }
+  }
+  @media (min-width: 769px) {
+    #mobile-view { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -311,6 +377,16 @@
   </div>
 
   <div class="wall" id="right-wall"></div>
+</div>
+
+<div id="mobile-view">
+  <div class="mobile-grid" id="mobile-top"></div>
+  <div id="mobile-name-block">
+    <a href="#" id="mobile-contact-link">Contact</a>
+    <h1>Paul Logus</h1>
+    <p>New York City</p>
+  </div>
+  <div class="mobile-grid" id="mobile-bottom"></div>
 </div>
 
 <div id="credit-box">
@@ -511,6 +587,32 @@ creditData.forEach(({ wall, index, title, label, name, side = 'right', lines = [
   img.addEventListener('mouseout', () => { creditBox.classList.remove('visible'); });
 });
 window.addEventListener('resize', sizeWalls);
+
+// ── mobile wall ──────────────────────────────────────────────────────────
+(function buildMobile() {
+  const all = [...left, ...right];
+  const topImgs = all.slice(0, 24);
+  const botImgs = all.slice(24);
+  function addImgs(containerId, srcs) {
+    const el = document.getElementById(containerId);
+    srcs.forEach(src => {
+      const img = document.createElement('img');
+      img.src = src; img.alt = ''; img.loading = 'lazy';
+      el.appendChild(img);
+    });
+  }
+  addImgs('mobile-top', topImgs);
+  addImgs('mobile-bottom', botImgs);
+
+  document.getElementById('mobile-contact-link').addEventListener('click', e => {
+    e.preventDefault();
+    contactOverlay.classList.toggle('open');
+    if (!contactOverlay.classList.contains('open')) {
+      contactForm.style.display = '';
+      contactStatus.textContent = '';
+    }
+  });
+})();
 </script>
 </body>
 </html>
