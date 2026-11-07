@@ -317,8 +317,8 @@
     }
     #mobile-name-block a {
       font-family: Georgia, serif;
-      color: #bbb;
-      font-size: 3.2vw;
+      color: #d8d8d8;
+      font-size: 4vw;
       letter-spacing: 0.08em;
       text-decoration: none;
       margin-bottom: 4px;
@@ -381,7 +381,7 @@
     #mobile-name-block p {
       font-family: Georgia, serif;
       font-weight: normal;
-      color: #aaa;
+      color: #bbb;
       font-size: 3.5vw;
       letter-spacing: 0.07em;
     }
@@ -657,8 +657,17 @@ document.addEventListener('click', e => {
     return;
   }
   const already = img.classList.contains('tapped');
-  document.querySelectorAll('.mobile-grid img.tapped').forEach(i => i.classList.remove('tapped'));
-  if (!already) img.classList.add('tapped');
+  document.querySelectorAll('.mobile-grid img.tapped').forEach(i => {
+    i.classList.remove('tapped');
+    i.style.transformOrigin = '';
+  });
+  if (!already) {
+    // set transform-origin so edge columns expand inward
+    const col = [...img.parentElement.children].indexOf(img) % 6;
+    const originX = col === 0 ? 'left' : col === 5 ? 'right' : 'center';
+    img.style.transformOrigin = originX + ' center';
+    img.classList.add('tapped');
+  }
 });
 
 // ── mobile contact form ─────────────────────────────────────────────────
